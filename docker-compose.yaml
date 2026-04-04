@@ -1,0 +1,125 @@
+services:
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.1
+    container_name: kafka
+    hostname: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_LISTENERS: "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:29093"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:29093"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+      KAFKA_LOG_DIRS: "/tmp/kraft-combined-logs"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server kafka:9092 --list || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  kafka-ui:
+    container_name: kafka-ui
+    image: provectuslabs/kafka-ui:v0.7.2
+    restart: unless-stopped
+    ports:
+      - "8088:8080"
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+    depends_on:
+      - kafka
+  
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '1'
+    #       memory: 4G
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.migrate
+    container_name: goose-migrate
+    working_dir: /app
+    volumes:
+      - .:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    entrypoint: ["goose"]
+
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4:7.2
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "admin@example.com"
+      PGADMIN_DEFAULT_PASSWORD: "admin"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    ports:
+      - "5050:80"
+    restart: unless-stopped
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '0.5'
+    #       memory: 1G
+    # networks:
+    #   - postgres
+
+  
+
+  app:
+    build: .
+    container_name: go-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    env_file:
+      - .env
+    restart: on-failure
+    ports:
+      - "8080:8080"
+    # networks:
+    #   - default
+
+volumes:
+  kafka_data:
+  pgdata:
+  pgadmin_data:
+
+# networks:
+#   default:
+#     name: kafka-net-sandbox
