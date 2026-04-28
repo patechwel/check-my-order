@@ -1,11 +1,11 @@
 [reaploaded]. 
 
-# L0. Order service
+# Order service
 Демонстрационный сервис с простейшим интерфейсом, отображающий данные о заказе. 
 ## Запуск
 1. Скопируйте репозиторий
 ```shell
-git clone github.com/hryak228pizza/check-my-order
+git clone github.com/patechwel/check-my-order
 ```
 2. В корне проекта у Вас должен быть файл .env. Установите в него необходимые для Вас параметры. Используйте .env.template как пример
 3. Запустите контейнеры
@@ -43,7 +43,7 @@ docker compose up -d
 - __./pkg/validation__ - реализация валидатора данных при помощи [validator](https://github.com/go-playground/validator).
 - __./templates__ - шаблон для веб-страниц.
 
-## Что еще нужно изменить?
+## TODO
 ___
 - Добавить тестов
 - Реализовать DLQ
