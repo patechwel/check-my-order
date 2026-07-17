@@ -1,52 +1,54 @@
 [reaploaded]. 
 
 # Order service
-Демонстрационный сервис с простейшим интерфейсом, отображающий данные о заказе. 
-## Запуск
-1. Скопируйте репозиторий
+A demo service with a simple interface displaying order data. 
+## Launch
+1. Clone the repository
 ```shell
 git clone github.com/patechwel/check-my-order
 ```
-2. В корне проекта у Вас должен быть файл .env. Установите в него необходимые для Вас параметры. Используйте .env.template как пример
-3. Запустите контейнеры
+2. You should have a .env file at the root of your project. Set the parameters you need in it. Use .env.template as an example.
+3. Run containers
 ```shell
 docker compose up -d
-или docker compose up -d --build
+or docker compose up -d --build
 ```
-## Точки взаимдействия
-- _http://localhost:8080/_ - интерфейс для ввода и чтения заказа по UID
-- _http://localhost:8080/swagger_ - страница с документацией
-- _http://localhost:8088/_ - интерфейс брокера сообщений с подробной информацией
-- _http://localhost:5050/_ - панель управления базой данных. Логин admin@example.com, пароль admin.
-## Архитектура
-В проекте используется следующий стек технологий:
+## Points of interaction
+- _http://localhost:8080/_ - interface for entering and reading orders by UID
+- _http://localhost:8080/swagger_ - documentation page
+- _http://localhost:8088/_ - message broker interface with detailed information
+- _http://localhost:5050/_ - Database control panel. Login admin@example.com, password admin.
+## Architecture
+The project uses the following technology stack:
 - __Go__
 - __html/js__
 - __kafka__
 - __postgreSQL__
 - __swagger__
 ***
-На веб странице в поле ввода вводится Id заказа. После нажатия кнопки Get срабатывает обработчик, который отправляет get запрос на /order/{id}.   
-Когда на наш сервис приходит get запрос, сервис возвращает json этого заказа, причем делает это разными способами: если id заказа есть в кэше - берет оттуда, иначе - идет в БД и подтягивает данные уже из нее, при этом этот заказ помещается в кэш. При успехе возвращается json c кодом 200, иначе 404 в случае, если заказа такого нет.   
-Параллельно с этим приходят заказы в брокер. Сервис их читает, проверяет на валидность, сохраняет новый заказ в кэш и в БД.   
+On the web page, the order ID is entered into the input field. After clicking the Get button, a handler is triggered, sending a GET request to /order/{id}.
 
-## Структура проекта
-- __./cmd/main.go__ - точка входа.
-- __./internal/config__ - обработка конфигурационнных файлов сервиса (из .env).
-- __./internal/generator__ - генератор заказов. Используется для продюсера брокера как симуляция новых заказов, которые создают пользователи.
-- __./internal/infrastucture__ - миграции, запросы для базы данных и репозиторий для БД.
-- __./internal/logger__ - реализация логгера через [zap](https://pkg.go.dev/go.uber.org/zap).
-- __./internal/model__ - модель данных заказа.
-- __./internal/transport/handler__ - реализация обработчика запросов на сервисе по эндпоинтам "/" и "/order/". Здесь же папка с документацией, сгенерированной при помощи [swagger](https://github.com/swaggo/swag).
-- __./internal/transport/kafka__ - реализация продюсера и консьюмера брокера.
-- __./pkg/cache__ - реализация кеша при помощи [golang-lru](https://github.com/hashicorp/golang-lru).
-- __./pkg/validation__ - реализация валидатора данных при помощи [validator](https://github.com/go-playground/validator).
-- __./templates__ - шаблон для веб-страниц.
+When our service receives a GET request, it returns a JSON file for that order, and does so in a variety of ways: if the order ID is in the cache, it retrieves it from there; otherwise, it goes to the database and retrieves the data from there, which places the order in the cache. If successful, the JSON file is returned with a 200 status code; otherwise, it returns a 404 status code if the order doesn't exist.
+
+At the same time, orders arrive at the broker. The service reads them, checks for validity, and saves the new order to the cache and the database.   
+
+## Project structure
+- __./cmd/main.go__ - entry point.
+- __./internal/config__ - processing service configuration files (from .env).
+- __./internal/generator__ - order generator. Used for the broker producer to simulate new orders created by users.
+- __./internal/infrastucture__ - migrations, database queries, and a database repository.
+- __./internal/logger__ - logger implementation via [zap](https://pkg.go.dev/go.uber.org/zap).
+- __./internal/model__ - order data model.
+- __./internal/transport/handler__ - implementation of the request handler on the service for the "/" and "/order/" endpoints. Here is a folder with documentation generated using [swagger](https://github.com/swaggo/swag).
+- __./internal/transport/kafka__ - implementation of the broker's producer and consumer.
+- __./pkg/cache__ - cache implementation using [golang-lru](https://github.com/hashicorp/golang-lru).
+- __./pkg/validation__ - data validator implementation using [validator](https://github.com/go-playground/validator).
+- __./templates__ - web page template.
 
 ## TODO
 ___
-- Добавить тестов
-- Реализовать DLQ
-- Реализовать Retry
-- Добавить трейсинг
-- Добавить метрики
+- Add tests
+- Implement DLQ
+- Implement Retry
+- Add tracing
+- Add metrics
